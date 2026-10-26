@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     # 24.04 images ship with the Android SDK preinstalled.
@@ -19,3 +22,12 @@ jobs:
         with:
           name: EqSync-apk
           path: app/build/outputs/apk/release/app-release.apk
+      # Direct phone download: Releases → "latest" → app-release.apk
+      - name: Publish to "latest" release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest app/build/outputs/apk/release/app-release.apk \
+            --title "EQ Sync (latest build)" --notes "Built from ${GITHUB_SHA::7}. Tap app-release.apk to install." --latest
